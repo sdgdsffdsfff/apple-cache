@@ -1,6 +1,7 @@
 package com.appleframework.cache.redis.spring;
 
 import org.redisson.Redisson;
+import org.redisson.RedissonClient;
 import org.springframework.cache.Cache;
 import org.springframework.cache.support.SimpleValueWrapper;
 
@@ -9,7 +10,7 @@ public class RedissonCache implements Cache {
 	private final String name;
 	private final RedisCache redisCache;
 
-	public RedissonCache(String name, int expire, Redisson redisson) {
+	public RedissonCache(String name, int expire, RedissonClient redisson) {
 		this.name = name;
 		this.redisCache = new RedisCache(name, expire, redisson);
 	}
@@ -64,6 +65,20 @@ public class RedissonCache implements Cache {
 					"Cached value is not of required type [" + type.getName() + "]: " + value);
 		}
 		return (T) value;
+	}
+
+	@Override
+	public ValueWrapper putIfAbsent(Object key, Object value) {
+		ValueWrapper wrapper = null;
+		Object objValue = this.redisCache.get(key.toString());
+		if (objValue != null) {
+			wrapper = new SimpleValueWrapper(objValue);
+		}
+		else {
+			wrapper = new SimpleValueWrapper(value);
+			this.redisCache.put(key.toString(), value);
+		}
+		return wrapper;
 	}
 
 }
